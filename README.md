@@ -1,216 +1,216 @@
 # Ammora Launchpad
 
-Token launchpad CLI hoàn chỉnh xây trên [`@ammora-protocol/sdk@0.3.9`](https://www.npmjs.com/package/@ammora-protocol/sdk), chạy trên **GIWA Sepolia testnet** (chain 91342). Dự án hiện thực hóa đúng shared path trong [LAUNCHPAD guide](https://github.com/AmmoraLabs/ammora-examples/blob/main/LAUNCHPAD.md):
+A complete token launchpad CLI built on [`@ammora-protocol/sdk@0.3.9`](https://www.npmjs.com/package/@ammora-protocol/sdk), running on the **GIWA Sepolia testnet** (chain 91342). The project implements the shared path from the [LAUNCHPAD guide](https://github.com/AmmoraLabs/ammora-examples/blob/main/LAUNCHPAD.md):
 
 ```text
-Launchpad tạo Config (dùng lại cho nhiều token)
+Launchpad creates a Config (reused across many tokens)
            ↓
-Creator phát hành token → token mới + ALC curve (pre-graduation)
+Creator issues a token → new token + ALC curve (pre-graduation)
            ↓
-Mua / bán trên ALC
+Buy / sell on the ALC curve
            ↓
 Final buy (terminal boundary) → ReadyToMigrate
-           ↓  (migration là transaction riêng, permissionless)
-ARL pool sau graduation + LP positions theo Config
+           ↓  (migration is a separate, permissionless transaction)
+Post-graduation ARL pool + Config-defined LP positions
            ↓
-Giao dịch trên ARL / claim Creator & Partner FeeVault fees
+Trade on the ARL pool / claim Creator & Partner FeeVault fees
 ```
 
-> **Cảnh báo:** đây là phần mềm beta testnet. Chưa có audit độc lập; không dùng tiền thật.
+> **Warning:** this is beta testnet software. It has no independent audit; do not use real funds.
 
 ---
 
-## Yêu cầu
+## Requirements
 
 - **Node.js 22+**
-- RPC GIWA Sepolia (mặc định dùng public RPC trong catalog của SDK, có thể override bằng `AMMORA_RPC_URL`)
-- Ví testnet với: **ETH (gas)** và **WETH (quote token cho giao dịch mua)** — hai số dư này tách biệt
-- Không cần key cho mọi lệnh đọc/preview. Chỉ lệnh gửi transaction mới cần `AMMORA_PRIVATE_KEY`
+- A GIWA Sepolia RPC (the SDK catalog's public endpoint is used by default; override with `AMMORA_RPC_URL`)
+- A testnet wallet funded with **ETH (gas)** and **WETH (the quote token for buys)** — the two balances are separate
+- No key is needed for any read/preview command. Only transaction-sending commands require `AMMORA_PRIVATE_KEY`
 
-## Cài đặt
+## Installation
 
 ```bash
 npm install
 npm run typecheck
-cp .env.example .env    # cấu hình theo hướng dẫn bên dưới
+cp .env.example .env    # configure as described below
 ```
 
-## Cấu hình `.env`
+## `.env` configuration
 
-| Biến | Ý nghĩa |
+| Variable | Meaning |
 | --- | --- |
 | `AMMORA_CHAIN_ID` | `91342` (GIWA Sepolia) |
-| `AMMORA_GIWA_GENERATION` | `auto-route` (generation đã review; **không trộn lẫn** với `legacy`) |
-| `AMMORA_RPC_URL` | Override RPC (tùy chọn) |
-| `AMMORA_RPC_INTERVAL_MS` | Giãn cách gọi JSON-RPC (mặc định 600ms) |
-| `AMMORA_SEND` | Cổng gửi: phải là `1` mới ký/gửi transaction |
-| `AMMORA_READ_RECEIPT` | Hash transaction: gán các lần đọc phụ thuộc vào block của receipt đó (dùng ngay sau khi tạo) |
-| `AMMORA_ACCOUNT` | Địa chỉ caller cho preview unsigned và lệnh đọc |
-| `AMMORA_PRIVATE_KEY` | Key ký cho lệnh send — **không bao giờ commit** |
-| `AMMORA_SLIPPAGE_BPS` | Slippage cho giao dịch ALC (100 = 1%, tối đa 1000) |
-| `AMMORA_STATE_FILE` | File trạng thái lifecycle (mặc định `.ammora-launchpad-state.json`) |
+| `AMMORA_GIWA_GENERATION` | `auto-route` (the reviewed generation; **never mix** with `legacy`) |
+| `AMMORA_RPC_URL` | RPC override (optional) |
+| `AMMORA_RPC_INTERVAL_MS` | Delay between JSON-RPC calls (default 600 ms) |
+| `AMMORA_SEND` | Send gate: must be `1` before any command signs or submits |
+| `AMMORA_READ_RECEIPT` | A transaction hash: binds dependent reads to that receipt's canonical block (use right after a creation) |
+| `AMMORA_ACCOUNT` | Caller address for unsigned previews and read commands |
+| `AMMORA_PRIVATE_KEY` | Signing key for send commands — **never commit** |
+| `AMMORA_SLIPPAGE_BPS` | Slippage for ALC trades (100 = 1%, max 1000) |
+| `AMMORA_STATE_FILE` | Lifecycle state file (default `.ammora-launchpad-state.json`) |
 
-## Quy trình lifecycle
+## Lifecycle walkthrough
 
-Trình helper: `./lp.sh <lệnh>` (tương đương `npm run lp -- <lệnh>`).
+All examples use the `./lp.sh` helper (equivalent to `npm run lp -- <command>`).
 
-### 1. Kiểm tra kết nối và deployment (read-only)
+### 1. Verify connection and deployment (read-only)
 
 ```bash
 ./lp.sh verify
 ```
 
-Xác minh V4 Core (Registry, Factory, GraduationAdapter, FeePolicy) tại snapshot đã confirm, và in tóm tắt template Config #6.
+Verifies the V4 Core (Registry, Factory, GraduationAdapter, FeePolicy) at a confirmed snapshot and prints the template Config #6 summary.
 
-### 2. Tạo launchpad Config
+### 2. Create the launchpad Config
 
-Sao chép `recipients.example.json` và thay 4 địa chỉ vai trò của bạn:
+Copy `recipients.example.json` and replace the four role addresses:
 
 ```bash
 ./lp.sh config preview recipients.json 1000000000000000 1000000000000000
-# Review toàn bộ Config + recipients + reviewHash in ra
+# Review the complete Config + recipients + the printed reviewHash
 AMMORA_SEND=1 ./lp.sh config create recipients.json 1000000000000000 1000000000000000 <reviewHash>
 ```
 
-- `saleSupplyRaw` / `quoteThresholdRaw` là **số nguyên raw units** (base 9 decimals: 1.000.000 token = `1000000000000000`; WETH 18 decimals: 0.001 WETH = `1000000000000000`)
-- `create` yêu cầu đúng `reviewHash` từ preview — hash này bind chain, Registry, amounts, calldata và recipients
-- Ví ký phải trùng `configOwner`
-- ConfigID/hash/token/curve **luôn lấy từ receipt**, không bao giờ từ prediction
+- `saleSupplyRaw` / `quoteThresholdRaw` are **raw-unit integers** (base with 9 decimals: 1,000,000 tokens = `1000000000000000`; WETH with 18 decimals: 0.001 WETH = `1000000000000000`)
+- `create` requires the exact `reviewHash` printed by the preview — the hash binds chain, Registry, amounts, calldata and recipients
+- The signing wallet must equal `configOwner`
+- ConfigID/hash/token/curve always come **from receipts**, never from predictions
 
-### 3. Phát hành token (dùng lại Config)
+### 3. Issue a token (reuse the Config)
 
 ```bash
 AMMORA_SEND=1 ./lp.sh create-launch <configId> "Launchpad Token" "LPT" "https://example.com/metadata.json"
 ```
 
-Tạo token + ALC curve trong 1 transaction. Token mới đọc `poolCreationFee` từ Config. Lưu `configId` để tái sử dụng cho các token sau — mỗi token không cần Config mới.
+Creates a token + ALC curve in one transaction. The new token reads `poolCreationFee` from the Config. Keep the `configId` to reuse across tokens — a new Config is not required per token.
 
-### 4. Quote trên ALC (read-only)
+### 4. Quote the ALC curve (read-only)
 
 ```bash
-./lp.sh quote                       # trạng thái curve
-./lp.sh quote buy 1000000000000     # quote raw units
+./lp.sh quote                       # curve state
+./lp.sh quote buy 1000000000000     # quote in raw units
 ./lp.sh quote sell 500000000
 ```
 
-Phân loại fill: `full` (giao dịch thường), `graduation-boundary` (final buy), partial sell / dust → **dừng**, không hiển thị như thành công.
+Fill classification: `full` (ordinary trade), `graduation-boundary` (final buy); partial sells / dust → **stop**, never display as executable success.
 
-### 5. Fund WETH và giao dịch trên ALC
+### 5. Fund WETH and trade on the ALC curve
 
 ```bash
-AMMORA_SEND=1 ./lp.sh fund 0.5              # wrap ETH → WETH (chỉ wrap số cần thiết)
-AMMORA_SEND=1 ./lp.sh swap buy 0.01         # WETH → token (số thập phân hệ thập phân)
+AMMORA_SEND=1 ./lp.sh fund 0.5              # wrap ETH → WETH (wrap only what is needed)
+AMMORA_SEND=1 ./lp.sh swap buy 0.01         # WETH → token (human decimal amount)
 AMMORA_SEND=1 ./lp.sh swap sell 100         # token → WETH
 ```
 
-### 6. Graduation — final buy và migration là 2 transaction riêng
+### 6. Graduation — final buy and migration are two separate transactions
 
 ```bash
-# Final buy đến terminal boundary + migration (xác nhận kép):
+# Final buy to the terminal boundary + migration (double confirmation):
 AMMORA_GRADUATION_CONFIRM=1 AMMORA_SEND=1 ./lp.sh graduate 100000000000000
 
-# Nếu đã ở ReadyToMigrate (status=2) — resume migration only:
+# If already ReadyToMigrate (status=2) — resume with migration only:
 ./lp.sh migrate                    # unsigned preview
 AMMORA_SEND=1 ./lp.sh migrate
 ```
 
-- Input của final buy là **tối đa**, curve chỉ tiêu phần consumable; phần thừa **ở lại ví** (không phải refund)
-- Curve chỉ tiêu `consumed`; `amountLeft` là unused input — đừng tính vào payout
-- Migration chỉ chạy khi snapshot đã confirm chứa receipt của final fill; **không bao giờ lặp lại** final buy thành công
+- The final-buy input is a **maximum**; the curve consumes only the fillable remainder and the unused input **stays in the wallet** (it is not a refund)
+- `amountLeft` is unused input — do not count it as a payout
+- Migration runs only after a confirmed snapshot includes the final-fill receipt; **never repeat** a successful final buy
 
-### 7. Xác minh pool sau graduation
+### 7. Verify the post-graduation pool
 
 ```bash
 ./lp.sh pool
 AMMORA_SEND=1 ./lp.sh swap-pool <tokenIn> 0.01 [concentrated|compounding|almm|dbc] [pool]
 ```
 
-Sau graduation, giao dịch nhắm vào **canonical pool**, không còn là curve. Giữ mọi LP NFT (Creator, Partner, rounding dust) để claim phí.
+After graduation, trades target the **canonical pool**, no longer the curve. Keep every LP NFT (Creator, Partner, rounding dust) for fee claims.
 
-### 8. Phí Creator/Partner
+### 8. Creator/Partner fees
 
 ```bash
-./lp.sh fees <owner>                    # xem claimable cho cả quote token + launch token
+./lp.sh fees <owner>                    # read claimable for both quote token + launch token
 AMMORA_SEND=1 ./lp.sh claim <feeToken> [payout]
 ```
 
-- Creator và Partner **tự ký claim quyền của mình** trong cùng FeeVault; `payout` chỉ đổi đích nhận, không đổi beneficiary
-- Zero claimable → không gửi transaction (no-op không phải payment thành công)
-- Quote claims không tự claim token fees — claim từng asset riêng
+- Creator and Partner each **sign for their own entitlement** in the same FeeVault; `payout` only changes the destination, never the beneficiary
+- Zero claimable sends no transaction (a no-op is not a successful payment)
+- Quote claims do not claim token fees — claim each asset separately
 
-### 9. Discovery qua Data API (tùy chọn)
+### 9. Discovery via the Data API (optional)
 
 ```bash
-./lp.sh discover                # các launch đã index cho chain 91342
+./lp.sh discover                # indexed launches for chain 91342
 ./lp.sh discover <token>
 ```
 
-Launches/pools là dữ liệu động — Data API index event từ factory đã review, mọi SDK consumer thấy cùng kết quả typed. (Có thể đổi endpoint qua `AMMORA_DATA_API_URL`.)
+Launches and pools are dynamic data — the Data API indexes events from Ammora-reviewed factories, so every SDK consumer sees the same typed result. (Override the endpoint with `AMMORA_DATA_API_URL`.)
 
-### 10. Trạng thái lifecycle
+### 10. Lifecycle state
 
 ```bash
-./lp.sh state   # in .ammora-launchpad-state.json
+./lp.sh state   # prints .ammora-launchpad-state.json
 ```
 
-Các bước tự lưu receipt-derived addresses vào state file để bước sau tự động tìm thấy.
+Each step saves its receipt-derived addresses to the state file so later steps can find them automatically.
 
 ---
 
-## Ranh giới an toàn đã hiện thực hóa
+## Safety boundaries implemented
 
-| Cơ chế | Mô tả |
+| Mechanism | Description |
 | --- | --- |
-| Send gate | Lệnh ký yêu cầu `AMMORA_SEND=1`; mọi lệnh còn lại chạy keyless |
-| reviewHash binding | Config create phải khớp hash của preview (chain, calldata, recipients) |
-| Receipt canonical | Token/curve/ConfigID/pool lấy từ receipt, không từ read-latest có thể lag |
-| Reviewed snapshot | Đọc state tại block đã confirm (`resolveAmmoraFinalizedHead`) hoặc block của receipt |
-| Curve authentication | Curve phải bind đúng Factory + FeePolicy version tại cùng block |
-| Strict fills | Lệnh thường phải `full`; chỉ final buy mới được `graduation-boundary` |
-| Core verification | `verifyAmmoraV4CoreAtBlock` trước mọi thao tác launch |
-| Own-beneficiary claim | `buildClaimFeeVaultFor` giữ nguyên semantics `claimFor` |
+| Send gate | Signing commands require `AMMORA_SEND=1`; everything else runs keyless |
+| reviewHash binding | Config create must match the preview's hash (chain, calldata, recipients) |
+| Canonical receipts | Token/curve/ConfigID/pool come from receipts, never from lag-prone latest reads |
+| Reviewed snapshots | State is read at a confirmed block (`resolveAmmoraFinalizedHead`) or a receipt's block |
+| Curve authentication | A curve must be bound to the reviewed Factory + FeePolicy version at the same block |
+| Strict fills | Ordinary orders must fill `full`; only the final buy may reach `graduation-boundary` |
+| Core verification | `verifyAmmoraV4CoreAtBlock` before every launch-path operation |
+| Own-beneficiary claim | `buildClaimFeeVaultFor` preserves `claimFor` semantics |
 
-## Cấu trúc thư mục
+## Project layout
 
 ```text
 src/
 ├── index.ts              CLI dispatcher + help
 ├── lib/
-│   ├── env.ts            Deployment catalog, client, reviewed snapshot, signer
-│   ├── tx.ts             Gửi transaction, receipt confirmations, approvals
+│   ├── env.ts            Deployment catalog, clients, reviewed snapshots, signer
+│   ├── tx.ts             Transaction submission, confirmed receipts, approvals
 │   ├── curve.ts          Curve authentication, quotes, explicit-block planning
-│   ├── state.ts          State file lifecycle
-│   └── format.ts         Định dạng raw/human, JSON bigint-safe
+│   ├── state.ts          Lifecycle state file
+│   └── format.ts         Raw/human formatting, bigint-safe JSON
 └── commands/
-    ├── verify.ts         Bước 1 — kết nối + Core + template
-    ├── config.ts         Bước 2 — Config preview/create từ template
-    ├── create-launch.ts  Bước 3 — phát hành token + ALC
-    ├── quote.ts          Bước 4 — state + quote
+    ├── verify.ts         Step 1 — connection + Core + template
+    ├── config.ts         Step 2 — Config preview/create from a template
+    ├── create-launch.ts  Step 3 — token issuance + ALC
+    ├── quote.ts          Step 4 — state + quotes
     ├── fund.ts           Wrap ETH → WETH
-    ├── swap.ts           Bước 5 — giao dịch ALC
-    ├── graduate.ts       Bước 6 — final fill + migration
-    ├── migrate.ts        Bước 6b — migration only (resume)
-    ├── pool.ts           Bước 7 — canonical pool
-    ├── swap-pool.ts      Bước 7 — giao dịch ARL (SDK swap client)
-    ├── fees.ts           Bước 8 — đọc claimable
-    ├── claim.ts          Bước 8 — claim phí
+    ├── swap.ts           Step 5 — ALC trading
+    ├── graduate.ts       Step 6 — final fill + migration
+    ├── migrate.ts        Step 6b — migration only (resume)
+    ├── pool.ts           Step 7 — canonical pool
+    ├── swap-pool.ts      Step 7 — ARL trading (SDK swap client)
+    ├── fees.ts           Step 8 — read claimable
+    ├── claim.ts          Step 8 — claim fees
     ├── discover.ts       Data API discovery
-    └── state.ts          In state file
+    └── state.ts          Print the state file
 ```
 
-## SDK surfaces sử dụng
+## SDK surfaces used
 
 - Deployment: `giwaSepoliaAutoRouteDeployment`, `resolveAmmoraFinalizedHead`, `createAmmoraDeploymentSource`
 - Launch V4: `getAmmoraV4ConfigAtBlock`, `buildCreateAmmoraV4Config`, `buildCreateAmmoraV4Launch`, `parseAmmoraV4ConfigCreatedReceipt`, `parseAmmoraV4LaunchCreatedReceipt`, `parseAmmoraV4SwapReceipt`, `parseAmmoraV4MigratedReceipt`, `verifyAmmoraV4CoreAtBlock`
 - Curve: `AmmoraV4LaunchCurveClient` (`getStateAtBlock`, `quoteExactInputAtBlock`, `planMigrateAtBlock`), `classifyAmmoraV4ExactInputFill`
-- Swap: `AmmoraSwapClient` / `prepareExactIn` / `execute` cho pool sau graduation
+- Swaps: `AmmoraSwapClient` / `prepareExactIn` / `execute` for post-graduation pools
 - Fees: `feeVaultAbi` (`claimable`), `buildClaimFeeVaultFor`
 - Discovery: `AmmoraDataApiClient`
 
-## Tài liệu tham khảo
+## References
 
 - [npm: @ammora-protocol/sdk](https://www.npmjs.com/package/@ammora-protocol/sdk)
-- [LAUNCHPAD.md — shared launchpad path](https://github.com/AmmoraLabs/ammora-examples/blob/main/LAUNCHPAD.md)
+- [LAUNCHPAD.md — the shared launchpad path](https://github.com/AmmoraLabs/ammora-examples/blob/main/LAUNCHPAD.md)
 - [ammora-examples repository](https://github.com/AmmoraLabs/ammora-examples)
 - [docs.ammora.org](https://docs.ammora.org/)
 
