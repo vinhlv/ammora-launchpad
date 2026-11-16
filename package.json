@@ -1,0 +1,39 @@
+{
+  "name": "ammora-launchpad",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "Token launchpad CLI built on @ammora-protocol/sdk 0.3.9 (GIWA Sepolia testnet)",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lp": "tsx src/index.ts",
+    "verify": "tsx src/index.ts verify",
+    "config": "tsx src/index.ts config",
+    "create-launch": "tsx src/index.ts create-launch",
+    "quote": "tsx src/index.ts quote",
+    "fund": "tsx src/index.ts fund",
+    "swap": "tsx src/index.ts swap",
+    "graduate": "tsx src/index.ts graduate",
+    "migrate": "tsx src/index.ts migrate",
+    "pool": "tsx src/index.ts pool",
+    "swap-pool": "tsx src/index.ts swap-pool",
+    "fees": "tsx src/index.ts fees",
+    "claim": "tsx src/index.ts claim",
+    "discover": "tsx src/index.ts discover",
+    "state": "tsx src/index.ts state",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ammora-protocol/sdk": "0.3.9",
+    "dotenv": "^16.4.5",
+    "viem": "^2.33.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
