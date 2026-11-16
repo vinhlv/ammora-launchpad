@@ -24,6 +24,7 @@
     "claim": "tsx src/index.ts claim",
     "discover": "tsx src/index.ts discover",
     "state": "tsx src/index.ts state",
+    "new-wallet": "node scripts/new-test-wallet.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -27,6 +27,18 @@ Trade on the ARL pool / claim Creator & Partner FeeVault fees
 - A testnet wallet funded with **ETH (gas)** and **WETH (the quote token for buys)** — the two balances are separate
 - No key is needed for any read/preview command. Only transaction-sending commands require `AMMORA_PRIVATE_KEY`
 
+### Use a clean test wallet
+
+Generate a fresh throwaway key locally (printed once, never stored or committed):
+
+```bash
+npm run new-wallet
+```
+
+Keep real wallets out of this project entirely: put the test key only in your
+local `.env` (CLI) or import it into a fresh MetaMask profile (web UI), and
+fund it from the GIWA Sepolia faucet.
+
 ## Installation
 
 ```bash
