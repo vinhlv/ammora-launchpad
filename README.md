@@ -49,6 +49,8 @@ cp .env.example .env    # configure as described below
 
 ## Web UI (browser wallet) 🖥️
 
+**Live (GitHub Pages): <https://vinhlv.github.io/ammora-launchpad/>**
+
 The repository also ships a full web app with browser-wallet signing (MetaMask):
 
 ```bash
@@ -67,7 +69,8 @@ npm run dev          # http://localhost:5183
 
 Signing happens entirely inside the browser wallet extension; reads follow the
 same reviewed confirmed-snapshot policy as the CLI. A private key never leaves
-the wallet. Production build: `npm run build` (static output in `web/dist/`).
+the wallet. Production build: `npm run build` (static output in `web/dist/`,
+published to the `gh-pages` branch).
 
 ## `.env` configuration
 
