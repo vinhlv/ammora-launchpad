@@ -35,6 +35,28 @@ npm run typecheck
 cp .env.example .env    # configure as described below
 ```
 
+## Web UI (browser wallet) 🖥️
+
+The repository also ships a full web app with browser-wallet signing (MetaMask):
+
+```bash
+cd web
+npm install
+npm run dev          # http://localhost:5183
+```
+
+| Tab | What it does |
+| --- | --- |
+| **Dashboard** | Deployment health (V4 Core verified at a confirmed snapshot), indexed launches via the Data API, local lifecycle state |
+| **Launch** | Issue a new token + ALC curve on an existing Config, signed by your wallet |
+| **Trade** | Buy/sell on the ALC curve — confirmed-snapshot quotes, strict fills, exact approvals |
+| **Graduate** | Final boundary buy → separate permissionless migration → trade the canonical pool |
+| **Fees** | Read claimable Creator/Partner fees and claim your own entitlement |
+
+Signing happens entirely inside the browser wallet extension; reads follow the
+same reviewed confirmed-snapshot policy as the CLI. A private key never leaves
+the wallet. Production build: `npm run build` (static output in `web/dist/`).
+
 ## `.env` configuration
 
 | Variable | Meaning |
