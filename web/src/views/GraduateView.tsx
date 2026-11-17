@@ -231,7 +231,7 @@ export function GraduateView() {
     }
   };
 
-  const statusTone = (status: number | undefined) =>
+  const statusTone = (status: number) =>
     status === 1 ? "green" : status === 2 ? "amber" : status === 3 ? "blue" : "neutral";
 
   return (
@@ -248,12 +248,11 @@ export function GraduateView() {
           </Button>
         </div>
         <div className="mt-4">
-          {stateQuery.loading && curve && <Loading label="Reading curve" />}
-          {stateQuery.error && <ErrorBox message={stateQuery.error} />}
+          {stateQuery.error && <ErrorBox message={error as string} />}
           {curveState && (
             <div>
               <div className="mb-2 flex gap-2">
-                <Badge tone={statusTone(curveState.status)}>{curveStatusName(curveState.status)}</Badge>
+                <Badge tone={statusTone(Number(curveState.status as number ?? 0))}>{curveStatusName(Number(curveState.status as number ?? 0))}</Badge>
               </div>
               <Row label="Base token">{shortAddress(curveState.baseToken)}</Row>
               <Row label="Quote token">{shortAddress(curveState.quoteToken)}</Row>

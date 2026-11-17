@@ -12,9 +12,9 @@ export function WalletButton() {
         href="https://metamask.io/download/"
         target="_blank"
         rel="noreferrer"
-        className="rounded-xl border border-amber-800 bg-amber-950/60 px-4 py-2 text-sm text-amber-300"
+        className="wallet-install"
       >
-        Install MetaMask
+        Install wallet
       </a>
     );
   }
@@ -22,30 +22,30 @@ export function WalletButton() {
   if (!wallet.address) {
     return (
       <Button onClick={() => void wallet.connect()} loading={wallet.connecting}>
-        Connect wallet
+        Connect
       </Button>
     );
   }
 
   const wrongChain = wallet.chainId !== undefined && wallet.chainId !== GIWA_CHAIN_ID;
   return (
-    <div className="flex items-center gap-2">
+    <div className="wallet-menu">
       {wrongChain ? (
         <button
           type="button"
           onClick={() => void wallet.ensureChain()}
-          className="rounded-full border border-amber-700 bg-amber-950 px-2.5 py-0.5 text-xs text-amber-300 hover:bg-amber-900"
+          className="wallet-network wallet-network--warning"
         >
-          Switch to GIWA Sepolia
+          Switch network
         </button>
       ) : (
-        <Badge tone="green">GIWA Sepolia</Badge>
+        <Badge tone="green">GIWA</Badge>
       )}
       <a
         href={explorerAddress(wallet.address)}
         target="_blank"
         rel="noreferrer"
-        className="mono rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 hover:border-zinc-500"
+        className="wallet-address mono"
       >
         {shortAddress(wallet.address)}
       </a>

@@ -64,77 +64,74 @@ export function DashboardView() {
     };
   }, []);
 
-  return (
-    <div className="grid gap-5">
-      <Card
-        title="Deployment health"
-        subtitle="V4 Core verified at a reviewed confirmed snapshot"
-        right={health.loading ? <Loading label="Verifying" /> : health.error ? <Badge tone="red">failed</Badge> : <Badge tone="green">verified</Badge>}
-      >
-        {health.error && <ErrorBox message={health.error} />}
-        {health.data && (
-          <div>
-            <Row label="Chain">
-              91342 — GIWA Sepolia
-            </Row>
-            <Row label="RPC">{RPC_URL}</Row>
-            <Row label="Explorer">{EXPLORER_URL}</Row>
-            <Row label="Confirmed snapshot">block {health.data.block.toString()}</Row>
-            <Row label="Config Registry">
-              <a className="hover:underline" href={explorerAddress(core.configRegistry)} target="_blank" rel="noreferrer">
-                {shortAddress(core.configRegistry)}
+  const healthSection = health.data && (
+    <div>
+      <Row label="Chain">91342 — GIWA Sepolia</Row>
+      <Row label="RPC">{RPC_URL}</Row>
+      <Row label="Explorer">{EXPLORER_URL}</Row>
+      <Row label="Confirmed snapshot">block {health.data.block.toString()}</Row>
+      <Row label="Config Registry">
+        <a className="hover:underline" href={explorerAddress(core.configRegistry)} target="_blank" rel="noreferrer">
+          {shortAddress(core.configRegistry)}
+        </a>
+      </Row>
+      <Row label="Launch Factory">
+        <a className="hover:underline" href={explorerAddress(core.launchFactory)} target="_blank" rel="noreferrer">
+          {shortAddress(core.launchFactory)}
+        </a>
+      </Row>
+      <Row label="Graduation Adapter">
+        <a className="hover:underline" href={explorerAddress(core.graduationAdapter)} target="_blank" rel="noreferrer">
+          {shortAddress(core.graduationAdapter)}
+        </a>
+      </Row>
+      <Row label="Fee Policy">
+        <a className="hover:underline" href={explorerAddress(core.feePolicy)} target="_blank" rel="noreferrer">
+          {shortAddress(core.feePolicy)}
+        </a>
+      </Row>
+    </div>
+  );
+
+  const launchesSection = launches && launches.length > 0 && (
+    <ul className="space-y-2">
+      {launches.slice(0, 10).map((item, index) => (
+        <li key={item.token ?? index} className="rounded-xl border border-zinc-800 bg-zinc-950/60 px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-medium text-zinc-200">
+              {item.name ?? "Unnamed"} {item.symbol ? `(${item.symbol})` : ""}
+            </span>
+            {item.token && (
+              <a
+                className="mono text-xs text-sky-400 hover:underline"
+                href={explorerAddress(item.token)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {shortAddress(item.token)}
               </a>
-            </Row>
-            <Row label="Launch Factory">
-              <a className="hover:underline" href={explorerAddress(core.launchFactory)} target="_blank" rel="noreferrer">
-                {shortAddress(core.launchFactory)}
-              </a>
-            </Row>
-            <Row label="Graduation Adapter">
-              <a className="hover:underline" href={explorerAddress(core.graduationAdapter)} target="_blank" rel="noreferrer">
-                {shortAddress(core.graduationAdapter)}
-              </a>
-            </Row>
-            <Row label="Fee Policy">
-              <a className="hover:underline" href={explorerAddress(core.feePolicy)} target="_blank" rel="noreferrer">
-                {shortAddress(core.feePolicy)}
-              </a>
-            </Row>
-            <Row label="Deployment slot">{deployment.slot}</Row>
+            )}
           </div>
-        )}
+        </li>
+      ))}
+    </ul>
+  );
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-2">
+      <Card title="Deployment health" subtitle="V4 Core verified at a reviewed confirmed snapshot" right={health.loading ? <Loading label="Verifying" /> : health.error ? <Badge tone="red">failed</Badge> : <Badge tone="green">verified</Badge>}>
+        {health.error && <ErrorBox message={health.error} />}
+        {healthSection}
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card title="Indexed launches" subtitle={`Data API · ${shortAddress("https://ammora-giwa-sepolia-data.fly.dev", 12)}`}>
+        <Card title="Indexed launches" subtitle="Data API · https://ammora-giwa-sepolia-data.fly.dev">
           {apiLoading && <Loading label="Fetching launches" />}
           {apiError && <NoticeBox tone="amber">{apiError}</NoticeBox>}
           {launches && launches.length === 0 && (
             <p className="text-sm text-zinc-500">No launches indexed yet.</p>
           )}
-          {launches && launches.length > 0 && (
-            <ul className="space-y-2">
-              {launches.slice(0, 10).map((item, index) => (
-                <li key={item.token ?? index} className="rounded-xl border border-zinc-800 bg-zinc-950/60 px-3 py-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-zinc-200">
-                      {item.name ?? "Unnamed"} {item.symbol ? `(${item.symbol})` : ""}
-                    </span>
-                    {item.token && (
-                      <a
-                        className="mono text-xs text-sky-400 hover:underline"
-                        href={explorerAddress(item.token)}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {shortAddress(item.token)}
-                      </a>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+          {launchesSection}
         </Card>
 
         <Card title="Your lifecycle state" subtitle="Saved locally from receipt-derived addresses">
@@ -147,8 +144,7 @@ export function DashboardView() {
             </div>
           ) : (
             <p className="text-sm text-zinc-500">
-              Nothing recorded yet. Create a launch in the <b>Launch</b> tab — token and curve
-              addresses will be saved here automatically from receipts.
+              Nothing recorded yet. Create a launch in the <b>Launch</b> tab — token and curve addresses will be saved here automatically from receipts.
             </p>
           )}
         </Card>

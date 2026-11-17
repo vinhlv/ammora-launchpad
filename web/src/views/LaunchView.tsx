@@ -119,54 +119,67 @@ export function LaunchView() {
         </div>
       </Card>
 
-      <div className="grid gap-5">
-        <Card title="Selected config" right={config.loading ? <Loading /> : config.error ? <Badge tone="red">error</Badge> : <Badge tone="green">loaded</Badge>}>
-          {config.error && <ErrorBox message={config.error} />}
-          {config.data && (
+      <Card title="Selected config">
+        <div className="grid gap-4">
+          <div className="grid gap-4">
             <div>
-              <Row label="Config">#{configId}</Row>
-              <Row label="Enabled">{config.data.enabled ? "yes" : "NO — cannot launch"}</Row>
-              <Row label="Token decimals">{config.data.config.tokenDecimals}</Row>
-              <Row label="poolCreationFee">{config.data.config.poolCreationFee.toString()} wei</Row>
-              <Row label="Curve segments">{config.data.segments.length}</Row>
-              <Row label="Config hash">{shortAddress(config.data.configHash)}</Row>
+              <span className="text-sm font-medium text-zinc-400 uppercase">Config</span>
+              <span>#{configId}</span>
             </div>
-          )}
-        </Card>
+            {error && <ErrorBox message={error} />}
+            {config.data && (
+              <div>
+                <span className="text-sm font-medium text-zinc-400 uppercase">Enabled</span>
+                <span>{config.data.enabled ? "yes" : "NO — cannot launch"}</span>
+                <span className="text-sm font-medium text-zinc-400 uppercase">Token decimals</span>
+                <span>{config.data.config.tokenDecimals}</span>
+                <span className="text-sm font-medium text-zinc-400 uppercase">poolCreationFee</span>
+                <span>{config.data.config.poolCreationFee.toString()} wei</span>
+                <span className="text-sm font-medium text-zinc-400 uppercase">Curve segments</span>
+                <span>{config.data.segments.length}</span>
+                <span className="text-sm font-medium text-zinc-400 uppercase">Config hash</span>
+                <span>{shortAddress(config.data.configHash)}</span>
+              </div>
+            )}
+          </div>
+          {config.loading ? <Loading /> : config.error ? <Badge tone="red">error</Badge> : <Badge tone="green">loaded</Badge>}
+        </div>
+      </Card>
 
-        {preview && (
-          <Card title="Transaction preview" subtitle="Built with buildCreateAmmoraV4Launch — exact calldata sent by your wallet">
+      {preview && (
+        <Card title="Transaction preview" subtitle="Built with buildCreateAmmoraV4Launch — exact calldata sent by your wallet">
+          <div>
             <Row label="To">{shortAddress(launchContracts.factory)}</Row>
             <Row label="Value">{(preview.value ?? 0n).toString()} wei</Row>
             <Row label="Calldata">{shortAddress(preview.data, 10)}</Row>
-          </Card>
-        )}
+          </div>
+        </Card>
+      )}
 
-        {result && (
-          <Card title="Launch created ✓" subtitle="Addresses parsed from the canonical receipt">
-            <NoticeBox>
-              Token and curve saved to local lifecycle state. Trade in the <b>Trade</b> tab.
-            </NoticeBox>
-            <div className="mt-3">
-              <Row label="Tx">
-                <a className="text-sky-400 hover:underline" href={explorerTx(result.hash)} target="_blank" rel="noreferrer">
-                  {shortAddress(result.hash)}
-                </a>
-              </Row>
-              <Row label="Token">
-                <a className="text-sky-400 hover:underline" href={explorerAddress(result.token)} target="_blank" rel="noreferrer">
-                  {result.token}
-                </a>
-              </Row>
-              <Row label="Curve">
-                <a className="text-sky-400 hover:underline" href={explorerAddress(result.curve)} target="_blank" rel="noreferrer">
-                  {result.curve}
-                </a>
-              </Row>
-            </div>
-          </Card>
-        )}
-      </div>
+      {result && (
+        <Card title="Launch created ✓" subtitle="Addresses parsed from the canonical receipt">
+          <NoticeBox>
+            Token and curve saved to local lifecycle state. Trade in the <b>Trade</b> tab.
+          </NoticeBox>
+          <div className="mt-3">
+            <Row label="Tx">
+              <a className="text-sky-400 hover:underline" href={explorerTx(result.hash)} target="_blank" rel="noreferrer">
+                {shortAddress(result.hash)}
+              </a>
+            </Row>
+            <Row label="Token">
+              <a className="text-sky-400 hover:underline" href={explorerAddress(result.token)} target="_blank" rel="noreferrer">
+                {result.token}
+              </a>
+            </Row>
+            <Row label="Curve">
+              <a className="text-sky-400 hover:underline" href={explorerAddress(result.curve)} target="_blank" rel="noreferrer">
+                {result.curve}
+              </a>
+            </Row>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
